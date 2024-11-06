@@ -3,6 +3,8 @@ from config import host, user, password, db_name, port
 
 
 try:
+    
+    print("Hello 1")
     #connect to db
     connection = psycopg2.connect(
         host=host,
@@ -11,6 +13,8 @@ try:
         database=db_name,
         port=port
     )
+    
+    print("Hello 2")
     
     #cursor
     with connection.cursor() as cursor:
@@ -395,6 +399,8 @@ try:
         )
         
         print(f"Output: {cursor.fetchall()}")
+        
+        print("Hello 3")
     
     
 except Exception as _ex:
