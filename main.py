@@ -1,5 +1,6 @@
 import psycopg2
 from config import db_params
+import traceback
 
 connection = None
 try:
@@ -396,8 +397,13 @@ try:
     for row in rows:
         print(row)
 
+except psycopg2.Error as e:
+    print(f"Ошибка при подключении к базе данных: {e}")
+    traceback.print_exc()
+
 except Exception as error:
-    print(f"Ошибка при подключении к базе данных: {error}")
+    print(f"Ошибка: {error}")
+    traceback.print_exc()
 
 finally:
     # Закрытие соединения
