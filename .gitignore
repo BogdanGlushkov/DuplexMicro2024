@@ -1,0 +1,29 @@
+# Virtual environment
+venv/
+venv*/
+.Python
+bin/
+include/
+lib/
+lib64/
+pip-selfcheck.json
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+*.pyc
+
+# Environment variables
+.env
+config.py
+
+# Database
+friends.db
+
+# Compiled Python files
+*.pyc
+
+# Dependency directories
+node_modules/
+/dist/
