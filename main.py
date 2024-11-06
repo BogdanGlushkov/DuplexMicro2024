@@ -1,7 +1,7 @@
 import psycopg2
 from config import db_params
 
-
+connection = None
 try:
     # Подключение к базе данных
     connection = psycopg2.connect(**db_params)
