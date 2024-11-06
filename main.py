@@ -398,7 +398,7 @@ try:
             """
         )
         
-        print(f"Output: {cursor.fetchall()}")
+        # print(f"Output: {cursor.fetchall()}")
         
         print("Hello 3")
     
