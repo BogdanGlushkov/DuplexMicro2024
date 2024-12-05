@@ -393,7 +393,7 @@ try:
     """
 
     # Выполнение запроса
-    cursor.execute(query, (DateStartFrom, DateStartTo))
+    cursor.execute(query)
 
     # Получение данных
     rows = cursor.fetchall()
