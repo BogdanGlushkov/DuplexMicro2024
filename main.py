@@ -14,7 +14,7 @@ try:
     DateStartTo = (datetime.today() + timedelta(days=1)).strftime('%d.%m.%Y')
 
     # Ваш запрос
-    query = f"""
+    query = """
     select 
         "States".*, 
         round(
@@ -219,8 +219,8 @@ try:
             "S_UsersStates" 
             where 
             (
-                "TimeOn" between : {DateStartFrom} 
-                and : {DateStartTo}
+                "TimeOn" between %s
+                and %s
             ) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
             and (
                 ("IDUser" > 0) 
@@ -251,8 +251,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between : {DateStartFrom} 
-                and : {DateStartTo}
+                "TimeStart" between %s
+                and %s
             ) 
             and ("Direction" = 1) 
             and ("Duration" > 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
@@ -282,8 +282,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between : {DateStartFrom} 
-                and : {DateStartTo}
+                "TimeStart" between %s
+                and %s
             ) 
             and ("Direction" = 1) 
             and ("Duration" = 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
@@ -315,8 +315,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between : {DateStartFrom} 
-                and : {DateStartTo}
+                "TimeStart" between %s
+                and %s
             ) 
             and ("Direction" = 2) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
             and (
@@ -393,7 +393,7 @@ try:
     """
 
     # Выполнение запроса
-    cursor.execute(query)
+    cursor.execute(query, (DateStartFrom, DateStartTo, DateStartFrom, DateStartTo, DateStartFrom, DateStartTo, DateStartFrom, DateStartTo))
 
     # Получение данных
     rows = cursor.fetchall()
