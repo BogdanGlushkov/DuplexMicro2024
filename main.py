@@ -219,8 +219,8 @@ try:
             "S_UsersStates" 
             where 
             (
-                "TimeOn" between %s
-                and %s
+                "TimeOn" between 05.12.2024
+                and 06.12.2024
             ) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
             and (
                 ("IDUser" > 0) 
@@ -251,8 +251,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between %s
-                and %s
+                "TimeStart" between 05.12.2024
+                and 06.12.2024
             ) 
             and ("Direction" = 1) 
             and ("Duration" > 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
@@ -282,8 +282,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between %s
-                and %s
+                "TimeStart" between 05.12.2024
+                and 06.12.2024
             ) 
             and ("Direction" = 1) 
             and ("Duration" = 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
@@ -315,8 +315,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between %s
-                and %s
+                "TimeStart" between 05.12.2024
+                and 06.12.2024
             ) 
             and ("Direction" = 2) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
             and (
