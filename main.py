@@ -2,7 +2,7 @@ import psycopg2
 from config import db_params
 import traceback
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 connection = None
 try:
@@ -11,7 +11,7 @@ try:
     cursor = connection.cursor()
     
     DateStartFrom = datetime.today().strftime('%d.%m.%Y')
-    DateStartTo = datetime.today().strftime('%d.%m.%Y') + datetime.timedelta(days=1)
+    DateStartTo = (datetime.today() + timedelta(days=1)).strftime('%d.%m.%Y')
 
     # Ваш запрос
     query = f"""
