@@ -2,14 +2,19 @@ import psycopg2
 from config import db_params
 import traceback
 
+from datetime import datetime
+
 connection = None
 try:
     # Подключение к базе данных
     connection = psycopg2.connect(**db_params)
     cursor = connection.cursor()
+    
+    DateStartFrom = datetime.today().strftime('%d.%m.%Y')
+    DateStartTo = datetime.today().strftime('%d.%m.%Y') + datetime.timedelta(days=1)
 
     # Ваш запрос
-    query = """
+    query = f"""
     select 
         "States".*, 
         round(
@@ -214,8 +219,8 @@ try:
             "S_UsersStates" 
             where 
             (
-                "TimeOn" between : DateStartFrom 
-                and : DateStartTo
+                "TimeOn" between : {DateStartFrom} 
+                and : {DateStartTo}
             ) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
             and (
                 ("IDUser" > 0) 
@@ -246,8 +251,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between : DateStartFrom 
-                and : DateStartTo
+                "TimeStart" between : {DateStartFrom} 
+                and : {DateStartTo}
             ) 
             and ("Direction" = 1) 
             and ("Duration" > 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
@@ -277,8 +282,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between : DateStartFrom 
-                and : DateStartTo
+                "TimeStart" between : {DateStartFrom} 
+                and : {DateStartTo}
             ) 
             and ("Direction" = 1) 
             and ("Duration" = 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
@@ -310,8 +315,8 @@ try:
             "S_CMCalls" 
             where 
             (
-                "TimeStart" between : DateStartFrom 
-                and : DateStartTo
+                "TimeStart" between : {DateStartFrom} 
+                and : {DateStartTo}
             ) 
             and ("Direction" = 2) $$$iif == p UsersFromGroups v vtNull $$$true $$$false 
             and (
