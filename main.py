@@ -10,8 +10,8 @@ try:
     connection = psycopg2.connect(**db_params)
     cursor = connection.cursor()
     
-    DateStartFrom = datetime.today().strftime('%d.%m.%Y')
-    DateStartTo = (datetime.today() + timedelta(days=1)).strftime('%d.%m.%Y')
+    DateStartFrom = datetime.today().strftime("'%Y-%m-%d'")
+    DateStartTo = (datetime.today() + timedelta(days=1)).strftime("'%Y-%m-%d'")
 
     # Ваш запрос
     query = f"""
