@@ -1,182 +1,146 @@
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from config import db_params
-import traceback
 
-from datetime import datetime, timedelta
-
-connection = None
-try:
-    # Подключение к базе данных
-    connection = psycopg2.connect(**db_params)
-    cursor = connection.cursor()
-    
-    DateStartFrom = datetime.today().strftime("'%Y-%m-%d'")
-    DateStartTo = (datetime.today() + timedelta(days=1)).strftime("'%Y-%m-%d'")
-
-    # Ваш запрос
-    query = f"""
-    SELECT "States".*,
-		 round( 10000.0 *(
-	CASE ( coalesce( "States"."UserStateOnlineDuration", 0 ) + coalesce( "States"."UserStateBusyDuration", 0 ) + coalesce( "States"."UserStateTimeoutDuration", 0 ) + coalesce( "States"."UserStateAwayDuration", 0 ) + coalesce( "States"."UserStateNADuration", 0 ) )
-	WHEN 0 THEN
-	null
-	ELSE ( coalesce( "States"."UserStateOnlineDuration", 0 ) + coalesce( "States"."UserStateBusyDuration", 0 ) ) / ( coalesce( "States"."UserStateOnlineDuration", 0 ) + coalesce( "States"."UserStateBusyDuration", 0 ) + coalesce( "States"."UserStateTimeoutDuration", 0 ) + coalesce( "States"."UserStateAwayDuration", 0 ) + coalesce( "States"."UserStateNADuration", 0 ) )
-	END ) ):: double precision / 100.0 AS "UserStateOnlinePercent", round( 10000.0 *(
-	CASE ( coalesce( "States"."UserStateOnlineDuration", 0 ) + coalesce( "States"."UserStateBusyDuration", 0 ) + coalesce( "States"."UserStateTimeoutDuration", 0 ) + coalesce( "States"."UserStateAwayDuration", 0 ) + coalesce( "States"."UserStateNADuration", 0 ) )
-	WHEN 0 THEN
-	null
-	ELSE ( coalesce( "States"."UserStateTimeoutDuration", 0 ) + coalesce( "States"."UserStateAwayDuration", 0 ) + coalesce( "States"."UserStateNADuration", 0 ) ) / ( coalesce( "States"."UserStateOnlineDuration", 0 ) + coalesce( "States"."UserStateBusyDuration", 0 ) + coalesce( "States"."UserStateTimeoutDuration", 0 ) + coalesce( "States"."UserStateAwayDuration", 0 ) + coalesce( "States"."UserStateNADuration", 0 ) )
-	END ) ):: double precision / 100.0 AS "UserStateNotOnlinePercent", "ConnectionsIn"."ConnectionsInCount", "ConnectionsIn"."ConnectionsInDuration",
-	CASE "ConnectionsIn"."ConnectionsInCount" > 0
-	WHEN true THEN
-	"ConnectionsIn"."ConnectionsInDuration_avg"
-	ELSE null
-	END AS "InAvg", "ConnectionsOut"."ConnectionsOutCount", "ConnectionsOut"."ConnectionsOutDuration",
-	CASE "ConnectionsOut"."ConnectionsOutCount" > 0
-	WHEN true THEN
-	"ConnectionsOut"."ConnectionsOutDuration_avg"
-	ELSE null
-	END AS "OutAvg", "ConnectionsLost"."ConnectionsLostCount", coalesce( "States"."UserStateOnlineDuration", 0 ) - coalesce( "ConnectionsIn"."ConnectionsInDuration", 0 ) - coalesce( "ConnectionsOut"."ConnectionsOutDuration", 0 ) AS "DownTimeDuration", trunc( 10000.0 *(
-	CASE "States"."UserStateOnlineDuration"
-	WHEN 0 THEN
-	null
-	WHEN NULL THEN
-	null
-	ELSE ( coalesce( "States"."UserStateOnlineDuration", 0 ) - coalesce( "ConnectionsIn"."ConnectionsInDuration", 0 ) - coalesce( "ConnectionsOut"."ConnectionsOutDuration", 0 ) )/ "States"."UserStateOnlineDuration"
-	END ) ):: double precision / 100.0 AS "DownTimePercent",
-	CASE coalesce( "ConnectionsIn"."ConnectionsInCount", 0 )+ coalesce( "ConnectionsOut"."ConnectionsOutCount", 0 )
-	WHEN 0 THEN
-	null
-	ELSE ( coalesce( "States"."UserStateOnlineDuration", 0 ) - coalesce( "ConnectionsIn"."ConnectionsInDuration", 0 ) - coalesce( "ConnectionsOut"."ConnectionsOutDuration", 0 ) )/( coalesce( "ConnectionsIn"."ConnectionsInCount", 0 )+ coalesce( "ConnectionsOut"."ConnectionsOutCount", 0 ) )
-	END AS "AvgDownTimeDuration", "InnerChatMessages"."Count" AS "InnerChatMessagesCount", "ExternalChatMessages"."Count" AS "ExternalChatMessagesCount"
-FROM 
-	(SELECT date_trunc('day', "TimeOn") AS "Date", "IDUser", sum( "TimeDelta" *(
-		CASE coalesce( "IDUserBaseState", "IDUserState" )
-		WHEN 300 THEN
-		1
-		ELSE 0
-		END ) ) AS "UserStateOnlineDuration", sum( "TimeDelta" *(
-		CASE coalesce( "IDUserBaseState", "IDUserState" )
-		WHEN 304 THEN
-		1
-		ELSE 0
-		END ) ) AS "UserStateBusyDuration", sum( "TimeDelta" *(
-		CASE coalesce( "IDUserBaseState", "IDUserState" )
-		WHEN 301 THEN
-		1
-		ELSE 0
-		END ) ) AS "UserStateTimeoutDuration", sum( "TimeDelta" *(
-		CASE coalesce( "IDUserBaseState", "IDUserState" )
-		WHEN 302 THEN
-		1
-		ELSE 0
-		END ) ) AS "UserStateAwayDuration", sum( "TimeDelta" *(
-		CASE coalesce( "IDUserBaseState", "IDUserState" )
-		WHEN 303 THEN
-		1
-		ELSE 0
-		END ) ) AS "UserStateNADuration"
-	FROM "S_UsersStates"
-	WHERE ( "TimeOn"
-		BETWEEN {DateStartFrom}
-			AND {DateStartTo} ) $$$iif == p UsersFromGroups v vtNull $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromGroups LIKE '%|' || "IDUser" || '|%' ) ) $$$end $$$iif == p UsersFromSubordinations v vtString |*| $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromSubordinations LIKE '%|' || "IDUser" || '|%' ) ) $$$end
-	GROUP BY  date_trunc('day', "TimeOn"), "IDUser"
-	ORDER BY  "IDUser" ) AS "States"
-LEFT JOIN 
-	(SELECT date_trunc('day', "TimeStart") AS "TimeStartDate", "IDUser", count("ID") AS "ConnectionsInCount", sum("Duration") AS "ConnectionsInDuration", avg("Duration") AS "ConnectionsInDuration_avg"
-	FROM "S_CMCalls"
-	WHERE ( "TimeStart"
-		BETWEEN {DateStartFrom}
-			AND {DateStartTo} )
-			AND ("Direction" = 1)
-			AND ("Duration" > 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromGroups LIKE '%|' || "IDUser" || '|%' ) ) $$$end $$$iif == p UsersFromSubordinations v vtString |*| $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromSubordinations LIKE '%|' || "IDUser" || '|%' ) ) $$$end
-	GROUP BY  date_trunc('day', "TimeStart"), "IDUser" ) AS "ConnectionsIn"
-	ON "States"."IDUser" = "ConnectionsIn"."IDUser"
-		AND "States"."Date" = "ConnectionsIn"."TimeStartDate"
-LEFT JOIN 
-	(SELECT date_trunc('day', "TimeStart") AS "TimeStartDate", "IDUser", count("ID") AS "ConnectionsLostCount"
-	FROM "S_CMCalls"
-	WHERE ( "TimeStart"
-		BETWEEN {DateStartFrom}
-			AND {DateStartTo} )
-			AND ("Direction" = 1)
-			AND ("Duration" = 0) $$$iif == p UsersFromGroups v vtNull $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromGroups LIKE '%|' || "IDUser" || '|%' ) ) $$$end $$$iif == p UsersFromSubordinations v vtString |*| $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromSubordinations LIKE '%|' || "IDUser" || '|%' ) ) $$$end
-	GROUP BY  date_trunc('day', "TimeStart"), "IDUser" ) AS "ConnectionsLost"
-	ON "States"."IDUser" = "ConnectionsLost"."IDUser"
-		AND "States"."Date" = "ConnectionsLost"."TimeStartDate"
-LEFT JOIN 
-	(SELECT date_trunc('day', "TimeStart") AS "TimeStartDate", "IDUser", count("ID") AS "ConnectionsOutCount", sum("Duration") AS "ConnectionsOutDuration", avg("Duration") AS "ConnectionsOutDuration_avg"
-	FROM "S_CMCalls"
-	WHERE ( "TimeStart"
-		BETWEEN {DateStartFrom}
-			AND {DateStartTo} )
-			AND ("Direction" = 2) $$$iif == p UsersFromGroups v vtNull $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromGroups LIKE '%|' || "IDUser" || '|%' ) ) $$$end $$$iif == p UsersFromSubordinations v vtString |*| $$$true $$$false
-			AND ( ("IDUser" > 0)
-			AND ( : UsersFromSubordinations LIKE '%|' || "IDUser" || '|%' ) ) $$$end
-	GROUP BY  date_trunc('day', "TimeStart"), "IDUser" ) AS "ConnectionsOut"
-	ON "States"."IDUser" = "ConnectionsOut"."IDUser"
-		AND "States"."Date" = "ConnectionsOut"."TimeStartDate"
-LEFT JOIN 
-	(SELECT date_trunc('day', "MessageTime") AS "Date", "IDSender", count("ID") AS "Count"
-	FROM "S_ChatMessages"
-	WHERE "SessionType" <> 4
-			AND "MessageType" = 0 $$$iif == p UsersFromGroups v vtNull $$$true $$$false
-			AND ( ("IDSender" > 0)
-			AND ( : UsersFromGroups LIKE '%|' || "IDSender" || '|%' ) ) $$$end $$$iif == p UsersFromSubordinations v vtString |*| $$$true $$$false
-			AND ( ("IDSender" > 0)
-			AND ( : UsersFromSubordinations LIKE '%|' || "IDSender" || '|%' ) ) $$$end
-	GROUP BY  date_trunc('day', "MessageTime"), "IDSender" ) AS "InnerChatMessages"
-	ON "States"."IDUser" = "InnerChatMessages"."IDSender"
-		AND "States"."Date" = "InnerChatMessages"."Date"
-LEFT JOIN 
-	(SELECT date_trunc('day', "MessageTime") AS "Date", "IDSender", count("ID") AS "Count"
-	FROM "S_ChatMessages"
-	WHERE "SessionType" = 4
-			AND "MessageType" = 0 $$$iif == p UsersFromGroups v vtNull $$$true $$$false
-			AND ( ("IDSender" > 0)
-			AND ( : UsersFromGroups LIKE '%|' || "IDSender" || '|%' ) ) $$$end $$$iif == p UsersFromSubordinations v vtString |*| $$$true $$$false
-			AND ( ("IDSender" > 0)
-			AND ( : UsersFromSubordinations LIKE '%|' || "IDSender" || '|%' ) ) $$$end
-	GROUP BY  date_trunc('day', "MessageTime"), "IDSender" ) AS "ExternalChatMessages"
-	ON "States"."IDUser" = "ExternalChatMessages"."IDSender"
-		AND "States"."Date" = "ExternalChatMessages"."Date"
+def get_user_statistics(date_start_from, date_start_to, users_from_groups, users_from_subordinations):
+    # Подзапрос с группировкой по дате и пользователю
+    states_query = """
+    SELECT date_trunc('day', "TimeOn") as Date, "IDUser", 
+           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 300 then 1 else 0 end)) as UserStateOnlineDuration,
+           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 304 then 1 else 0 end)) as UserStateBusyDuration,
+           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 301 then 1 else 0 end)) as UserStateTimeoutDuration,
+           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 302 then 1 else 0 end)) as UserStateAwayDuration,
+           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 303 then 1 else 0 end)) as UserStateNADuration
+    FROM S_UsersStates
+    WHERE TimeOn between %s and %s
+    %s
+    GROUP BY date_trunc('day', TimeOn), IDUser
+    ORDER BY IDUser
     """
 
-    # Выполнение запроса
-    cursor.execute(query)
+    # Подзапросы для подсчета входящих соединений
+    connections_in_query = """
+    SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsInCount, sum(Duration) as ConnectionsInDuration, avg(Duration) as ConnectionsInDuration_avg
+    FROM S_CMCalls
+    WHERE TimeStart between %s and %s AND Direction = 1 AND Duration > 0
+    %s
+    GROUP BY date_trunc('day', TimeStart), IDUser
+    """
 
-    # Получение данных
-    rows = cursor.fetchall()
+    # Подзапросы для подсчета исходящих соединений
+    connections_out_query = """
+    SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsOutCount, sum(Duration) as ConnectionsOutDuration, avg(Duration) as ConnectionsOutDuration_avg
+    FROM S_CMCalls
+    WHERE TimeStart between %s and %s AND Direction = 2 AND Duration > 0
+    %s
+    GROUP BY date_trunc('day', TimeStart), IDUser
+    """
 
-    # Вывод данных
-    for row in rows:
-        print(row)
+    # Подзапросы для подсчета потерянных соединений
+    connections_lost_query = """
+    SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsLostCount
+    FROM S_CMCalls
+    WHERE TimeStart between %s and %s AND Direction = 1 AND Duration = 0
+    %s
+    GROUP BY date_trunc('day', TimeStart), IDUser
+    """
 
-except psycopg2.Error as e:
-    print(f"Ошибка при подключении к базе данных: {e}")
-    traceback.print_exc()
+    # Подзапросы для подсчета внутренних сообщений
+    inner_chat_messages_query = """
+    SELECT date_trunc('day', MessageTime) as Date, IDSender, count(ID) as Count
+    FROM S_ChatMessages
+    WHERE SessionType <> 4 AND MessageType = 0
+    %s
+    GROUP BY date_trunc('day', MessageTime), IDSender
+    """
 
-except Exception as error:
-    print(f"Ошибка: {error}")
-    traceback.print_exc()
+    # Подзапросы для подсчета внешних сообщений
+    external_chat_messages_query = """
+    SELECT date_trunc('day', MessageTime) as Date, IDSender, count(ID) as Count
+    FROM S_ChatMessages
+    WHERE SessionType = 4 AND MessageType = 0
+    %s
+    GROUP BY date_trunc('day', MessageTime), IDSender
+    """
 
-finally:
-    # Закрытие соединения
-    if connection:
+    # Формирование полного запроса
+    main_query = f"""
+    SELECT 
+        s.Date, s.IDUser, 
+        COALESCE(s.UserStateOnlineDuration, 0) + COALESCE(cin.ConnectionsInDuration, 0) + COALESCE(cout.ConnectionsOutDuration, 0) as TotalDuration,
+        {states_query},
+        {connections_in_query} AS ConnectionsIn,
+        {connections_out_query} AS ConnectionsOut,
+        {connections_lost_query} AS ConnectionsLost,
+        {inner_chat_messages_query} AS InnerChatMessages,
+        {external_chat_messages_query} AS ExternalChatMessages
+    FROM ({states_query}) s
+    LEFT JOIN ({connections_in_query}) cin ON s.Date = cin.TimeStartDate AND s.IDUser = cin.IDUser
+    LEFT JOIN ({connections_out_query}) cout ON s.Date = cout.TimeStartDate AND s.IDUser = cout.IDUser
+    LEFT JOIN ({connections_lost_query}) cl ON s.Date = cl.TimeStartDate AND s.IDUser = cl.IDUser
+    LEFT JOIN ({inner_chat_messages_query}) ichm ON s.Date = ichm.Date AND s.IDUser = ichm.IDSender
+    LEFT JOIN ({external_chat_messages_query}) echm ON s.Date = echm.Date AND s.IDUser = echm.IDSender
+    WHERE s.Date = %s
+    """
+
+    # Подготовка параметров запроса
+    params = (
+        date_start_from,
+        date_start_to,
+        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
+        date_start_from,
+        date_start_to,
+        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
+        date_start_from,
+        date_start_to,
+        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
+        date_start_from,
+        date_start_to,
+        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
+        date_start_from,
+        date_start_to,
+        users_from_groups,
+        users_from_subordinations,
+        users_from_groups,
+        users_from_subordinations,
+        users_from_groups,
+        users_from_subordinations,
+        users_from_groups,
+        users_from_subordinations
+    )
+
+    try:
+
+        # Подключение к базе данных
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Выполнение запроса
+        cursor.execute(main_query, params)
+        
+        # Получение результатов
+        results = cursor.fetchall()
+
+        # Закрытие курсора и соединения
         cursor.close()
-        connection.close()
-        print("Соединение закрыто")
+        conn.close()
+
+        return results
+
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(f"Ошибка при выполнении запроса: {error}")
+        return None
+
+# Пример использования функции
+if __name__ == "__main__":
+
+    date_start_from = "2023-01-01"
+    date_start_to = "2023-12-31"
+    users_from_groups = ""
+    users_from_subordinations = ""
+
+    results = get_user_statistics(date_start_from, date_start_to, users_from_groups, users_from_subordinations)
+
+    if results:
+        for row in results:
+            print(row)
