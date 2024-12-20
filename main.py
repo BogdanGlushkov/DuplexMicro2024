@@ -110,6 +110,7 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
         users_from_groups,
         users_from_subordinations
     )
+    print(len(params))
 
     try:
 
@@ -117,6 +118,7 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
+		
         # Выполнение запроса
         cursor.execute(main_query, params)
         
