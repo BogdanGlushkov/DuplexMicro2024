@@ -3,23 +3,22 @@ from psycopg2.extras import RealDictCursor
 from config import db_params
 
 def get_user_statistics(date_start_from, date_start_to, users_from_groups, users_from_subordinations):
-    # Подзапрос с группировкой по дате и пользователю
     states_query = f"""
-    SELECT date_trunc('day', "TimeOn") as Date, "IDUser", 
-           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 300 then 1 else 0 end)) as UserStateOnlineDuration,
-           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 304 then 1 else 0 end)) as UserStateBusyDuration,
-           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 301 then 1 else 0 end)) as UserStateTimeoutDuration,
-           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 302 then 1 else 0 end)) as UserStateAwayDuration,
-           sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 303 then 1 else 0 end)) as UserStateNADuration
-    FROM S_UsersStates
-    WHERE TimeOn between {date_start_from} and {date_start_to}
-    AND (IDUser > 0)
-    GROUP BY date_trunc('day', TimeOn), IDUser
-    ORDER BY IDUser
-    """
+	SELECT date_trunc('day', "TimeOn") as Date, "IDUser", 
+		sum("TimeDelta"*(case when coalesce("IDUserBaseState", "IDUserState") = 300 then 1 else 0 end)) as UserStateOnlineDuration,
+		sum("TimeDelta"*(case when coalesce("IDUserBaseState", "IDUserState") = 304 then 1 else 0 end)) as UserStateBusyDuration,
+		sum("TimeDelta"*(case when coalesce("IDUserBaseState", "IDUserState") = 301 then 1 else 0 end)) as UserStateTimeoutDuration,
+		sum("TimeDelta"*(case when coalesce("IDUserBaseState", "IDUserState") = 302 then 1 else 0 end)) as UserStateAwayDuration,
+		sum("TimeDelta"*(case when coalesce("IDUserBaseState", "IDUserState") = 303 then 1 else 0 end)) as UserStateNADuration
+	FROM S_UsersStates
+	WHERE "TimeOn" BETWEEN :DateStartFrom AND :DateStartTo
+	AND ("IDUser" > 0)
+	GROUP BY date_trunc('day', "TimeOn"), "IDUser"
+	ORDER BY "IDUser"
+	"""
 
     # Подзапросы для подсчета входящих соединений
-    connections_in_query = """
+    connections_in_query = f"""
     SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsInCount, sum(Duration) as ConnectionsInDuration, avg(Duration) as ConnectionsInDuration_avg
     FROM S_CMCalls
     WHERE TimeStart between {date_start_from} and {date_start_to} AND Direction = 1 AND Duration > 0
@@ -28,7 +27,7 @@ def get_user_statistics(date_start_from, date_start_to, users_from_groups, users
     """
 
     # Подзапросы для подсчета исходящих соединений
-    connections_out_query = """
+    connections_out_query = f"""
     SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsOutCount, sum(Duration) as ConnectionsOutDuration, avg(Duration) as ConnectionsOutDuration_avg
     FROM S_CMCalls
     WHERE TimeStart between {date_start_from} and {date_start_to} AND Direction = 1 AND Duration > 0
@@ -37,7 +36,7 @@ def get_user_statistics(date_start_from, date_start_to, users_from_groups, users
     """
 
     # Подзапросы для подсчета потерянных соединений
-    connections_lost_query = """
+    connections_lost_query = f"""
     SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsLostCount
     FROM S_CMCalls
     WHERE TimeStart between {date_start_from} and {date_start_to} AND Direction = 1 AND Duration > 0
