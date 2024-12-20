@@ -2,11 +2,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from config import db_params
 
-def get_user_statistics(date_range, users_from_groups, users_from_subordinations):
-    
-    start_date, end_date = date_range
+def get_user_statistics(date_start_from, date_start_to, users_from_groups, users_from_subordinations):
     # Подзапрос с группировкой по дате и пользователю
-    states_query = """
+    states_query = f"""
     SELECT date_trunc('day', "TimeOn") as Date, "IDUser", 
            sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 300 then 1 else 0 end)) as UserStateOnlineDuration,
            sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 304 then 1 else 0 end)) as UserStateBusyDuration,
@@ -14,8 +12,8 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
            sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 302 then 1 else 0 end)) as UserStateAwayDuration,
            sum("TimeDelta"*(case coalesce("IDUserBaseState", "IDUserState") when 303 then 1 else 0 end)) as UserStateNADuration
     FROM S_UsersStates
-    WHERE TimeOn between %s and %s
-    %s
+    WHERE TimeOn between {date_start_from} and {date_start_to}
+    AND (IDUser > 0)
     GROUP BY date_trunc('day', TimeOn), IDUser
     ORDER BY IDUser
     """
@@ -24,8 +22,8 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
     connections_in_query = """
     SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsInCount, sum(Duration) as ConnectionsInDuration, avg(Duration) as ConnectionsInDuration_avg
     FROM S_CMCalls
-    WHERE TimeStart between %s and %s AND Direction = 1 AND Duration > 0
-    %s
+    WHERE TimeStart between {date_start_from} and {date_start_to} AND Direction = 1 AND Duration > 0
+    AND (IDUser > 0)
     GROUP BY date_trunc('day', TimeStart), IDUser
     """
 
@@ -33,8 +31,8 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
     connections_out_query = """
     SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsOutCount, sum(Duration) as ConnectionsOutDuration, avg(Duration) as ConnectionsOutDuration_avg
     FROM S_CMCalls
-    WHERE TimeStart between %s and %s AND Direction = 2 AND Duration > 0
-    %s
+    WHERE TimeStart between {date_start_from} and {date_start_to} AND Direction = 1 AND Duration > 0
+    AND (IDUser > 0)
     GROUP BY date_trunc('day', TimeStart), IDUser
     """
 
@@ -42,8 +40,8 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
     connections_lost_query = """
     SELECT date_trunc('day', TimeStart) as TimeStartDate, IDUser, count(ID) as ConnectionsLostCount
     FROM S_CMCalls
-    WHERE TimeStart between %s and %s AND Direction = 1 AND Duration = 0
-    %s
+    WHERE TimeStart between {date_start_from} and {date_start_to} AND Direction = 1 AND Duration > 0
+    AND (IDUser > 0)
     GROUP BY date_trunc('day', TimeStart), IDUser
     """
 
@@ -52,7 +50,6 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
     SELECT date_trunc('day', MessageTime) as Date, IDSender, count(ID) as Count
     FROM S_ChatMessages
     WHERE SessionType <> 4 AND MessageType = 0
-    %s
     GROUP BY date_trunc('day', MessageTime), IDSender
     """
 
@@ -61,7 +58,6 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
     SELECT date_trunc('day', MessageTime) as Date, IDSender, count(ID) as Count
     FROM S_ChatMessages
     WHERE SessionType = 4 AND MessageType = 0
-    %s
     GROUP BY date_trunc('day', MessageTime), IDSender
     """
 
@@ -85,42 +81,13 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
     WHERE s.Date = %s
     """
 
-    # Подготовка параметров запроса
-    params = (
-        start_date,
-        end_date,
-        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        start_date,
-        end_date,
-        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        start_date,
-        end_date,
-        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        start_date,
-        end_date,
-        f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        start_date,
-        end_date,
-        users_from_groups,
-        users_from_subordinations,
-        users_from_groups,
-        users_from_subordinations,
-        users_from_groups,
-        users_from_subordinations,
-        users_from_groups,
-        users_from_subordinations
-    )
-    print(len(params))
-
     try:
-
         # Подключение к базе данных
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-		
         # Выполнение запроса
-        cursor.execute(main_query, params)
+        cursor.execute(main_query)
         
         # Получение результатов
         results = cursor.fetchall()
@@ -137,12 +104,18 @@ def get_user_statistics(date_range, users_from_groups, users_from_subordinations
 
 # Пример использования функции
 if __name__ == "__main__":
+    host = db_params['host']
+    database =  db_params['database']
+    user =  db_params['user']
+    password =  db_params['password']
+    port = db_params['port']
 
-    date_range = ("2023-01-01", "2023-12-31")  # Укажите диапазон дат
+    date_start_from = "2023-01-01"
+    date_start_to = "2023-12-31"
     users_from_groups = ""
     users_from_subordinations = ""
 
-    results = get_user_statistics(date_range, users_from_groups, users_from_subordinations)
+    results = get_user_statistics(host, database, user, password, port, date_start_from, date_start_to, users_from_groups, users_from_subordinations)
 
     if results:
         for row in results:
