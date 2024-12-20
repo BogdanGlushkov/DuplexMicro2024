@@ -104,18 +104,18 @@ def get_user_statistics(date_start_from, date_start_to, users_from_groups, users
 
 # Пример использования функции
 if __name__ == "__main__":
-    host = db_params['host']
-    database =  db_params['database']
-    user =  db_params['user']
-    password =  db_params['password']
-    port = db_params['port']
+    # host = db_params['host']
+    # database =  db_params['database']
+    # user =  db_params['user']
+    # password =  db_params['password']
+    # port = db_params['port']
 
     date_start_from = "2023-01-01"
     date_start_to = "2023-12-31"
     users_from_groups = ""
     users_from_subordinations = ""
 
-    results = get_user_statistics(host, database, user, password, port, date_start_from, date_start_to, users_from_groups, users_from_subordinations)
+    results = get_user_statistics(date_start_from, date_start_to, users_from_groups, users_from_subordinations)
 
     if results:
         for row in results:
