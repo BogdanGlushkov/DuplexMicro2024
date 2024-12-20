@@ -2,7 +2,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from config import db_params
 
-def get_user_statistics(date_start_from, date_start_to, users_from_groups, users_from_subordinations):
+def get_user_statistics(date_range, users_from_groups, users_from_subordinations):
+    
+    start_date, end_date = date_range
     # Подзапрос с группировкой по дате и пользователю
     states_query = """
     SELECT date_trunc('day', "TimeOn") as Date, "IDUser", 
@@ -85,20 +87,20 @@ def get_user_statistics(date_start_from, date_start_to, users_from_groups, users
 
     # Подготовка параметров запроса
     params = (
-        date_start_from,
-        date_start_to,
+        start_date,
+        end_date,
         f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        date_start_from,
-        date_start_to,
+        start_date,
+        end_date,
         f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        date_start_from,
-        date_start_to,
+        start_date,
+        end_date,
         f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        date_start_from,
-        date_start_to,
+        start_date,
+        end_date,
         f"AND (IDUser > 0) AND (%s like '%|' || IDUser || '|%')",
-        date_start_from,
-        date_start_to,
+        start_date,
+        end_date,
         users_from_groups,
         users_from_subordinations,
         users_from_groups,
@@ -134,12 +136,11 @@ def get_user_statistics(date_start_from, date_start_to, users_from_groups, users
 # Пример использования функции
 if __name__ == "__main__":
 
-    date_start_from = "2023-01-01"
-    date_start_to = "2023-12-31"
+    date_range = ("2023-01-01", "2023-12-31")  # Укажите диапазон дат
     users_from_groups = ""
     users_from_subordinations = ""
 
-    results = get_user_statistics(date_start_from, date_start_to, users_from_groups, users_from_subordinations)
+    results = get_user_statistics(date_range, users_from_groups, users_from_subordinations)
 
     if results:
         for row in results:
