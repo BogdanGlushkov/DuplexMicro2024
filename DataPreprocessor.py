@@ -4,6 +4,7 @@ import pandas as pd
 from userlogic import user_exists, add_user, get_user_id
 from metrikalogic import entry_exists, add_entry
 from jsonRequest import print_json
+import json
 
 all_json_data = []
 
@@ -73,10 +74,9 @@ def send_response(file):
                 else: 
                     CountMissed = 0
                 
-                json_data = {
+                metrika = {
                     "Date" : str(SheetData),
                     "Operator" : this_user,
-                    "operator_id" : operator_id,
                     "Status" : {
                         "StatusTimeInPlace": StatusTimeInPlace,
                         "StatusTimeBusy": StatusTimeBusy,
@@ -96,10 +96,10 @@ def send_response(file):
                     }
                 }
                 
-                all_json_data.append(json_data)
+                all_json_data.append(metrika)
                 
                 add_entry(operator_id, SheetData)
             else:
                 print(f'Экземпляр с operator_id: {operator_id}, data: {SheetData} уже существует')
     
-    return all_json_data
+    return json.dumps({"metriks": all_json_data}, ensure_ascii=False)

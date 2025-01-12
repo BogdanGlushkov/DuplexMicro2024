@@ -1,18 +1,22 @@
 from file_script import list_all_files, remove_file_from_query
 from DataPreprocessor import send_response
+from config import CROSS_SERVER_INTEGRATION_KEY
 
 import requests
 
 # Пример использования
-directory = "/home/remote/mnt/share/"  # Укажите вашу директорию
+# directory = "/home/remote/mnt/share/"
+directory = "2025"
 all_files = list_all_files(directory)
-url = "http://example.com/your-endpoint" # Путь к endpoint на сервере
+url = "http://olegperm.fvds.ru/api/add_metrika" # Путь к endpoint на сервере
 
 def send_data_to_server(data):
     # Отправляем JSON данные через POST запрос
-    response = requests.post(url, json=data)
+    print(data)
+    headers = {"Authorization": CROSS_SERVER_INTEGRATION_KEY, "Content-Type": "application/json"}
+    response = requests.post(url, json=data, headers=headers)
     
-    if response.status_code == 200:
+    if response.status_code == 201:
         print("Данные успешно отправлены!")
         remove_file_from_query(file)
     else:

@@ -28,3 +28,5 @@ friends.db
 node_modules/
 /dist/
 123.txt
+*.csv
+2025/
