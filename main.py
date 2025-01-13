@@ -34,7 +34,7 @@ def send_data_to_server(data):
 if all_files:
     print("Список всех файлов, которые еще не были обработаны:")
     for file in all_files:
-        print(send_response(file))
-        send_data_to_server(send_response(file))
+        if file.endswith('.xls'):
+            send_data_to_server(send_response(file))
 else:
     print("Все файлы уже были обработаны.")
