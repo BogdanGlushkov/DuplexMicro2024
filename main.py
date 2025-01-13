@@ -10,7 +10,7 @@ load_dotenv()
 import requests
 
 # Пример использования
-directory = "/home/remote/mnt/share/"
+directory = "/home/remote/mnt/share/2024/12/26/"
 all_files = list_all_files(directory)
 url = "http://olegperm.fvds.ru/api/add_metrika" # Путь к endpoint на сервере
 
