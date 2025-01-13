@@ -10,8 +10,8 @@ all_json_data = []
 
 def send_response(file):
     data = pd.read_excel(file)
-    print(data.head(6))
-    print(data.tail(5))
+    # print(data.head(6))
+    # print(data.tail(5))
 
     user_in_block = ['Vizor', 'Vizor2', 'Администратор', 'Оператор1', 'super123']
 
