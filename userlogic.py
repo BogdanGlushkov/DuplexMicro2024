@@ -19,7 +19,7 @@ def get_next_id():
             return max_id + 1
     else:
         # Если файла нет, начинаем с 1
-        return 0
+        return 1
 
 # Функция для проверки существования номера
 def user_exists(operator_number):
