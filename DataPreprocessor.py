@@ -10,7 +10,7 @@ all_json_data = []
 
 def send_response(file):
     data = pd.read_excel(file)
-    print(data.head(12))
+    # print(data.head(12))
     # print(data.tail(5))
 
     user_in_block = ['Vizor', 'Vizor2', 'Администратор', 'Оператор1', 'super123']
@@ -96,14 +96,9 @@ def send_response(file):
             else:
                 print(f'Экземпляр с operator_id: {operator_id}, data: {SheetData} уже существует')
                 
-    # Путь и имя файла
-    file_path = "request.txt"
-
-    # Запись в файл
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump({"metriks": all_json_data}, file, ensure_ascii=False, indent=4)
-        
-
-    print(f"Данные успешно записаны в файл {file_path}")
+    # file_path = "request.txt"
+    # with open(file_path, "w", encoding="utf-8") as file:
+    #     json.dump({"metriks": all_json_data}, file, ensure_ascii=False, indent=4)
+    # print(f"Данные успешно записаны в файл {file_path}")
     
     return json.dumps({"metriks": all_json_data}, ensure_ascii=False)
