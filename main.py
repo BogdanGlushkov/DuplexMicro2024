@@ -1,5 +1,6 @@
 from file_script import list_all_files, remove_file_from_query
 from DataPreprocessor import send_response
+from UserPreprocessor import preprocess_user
 from metrikalogic import add_entry
 import os
 from dotenv import load_dotenv
@@ -50,7 +51,8 @@ def fetch_users_data(url_users_acc):
 
 
 response = fetch_users_data(url_to_inf)
-print(response[0])
+for data in response:
+    preprocess_user(data)
 
 # Выводим все файлы, которые еще не были обработаны
 if all_files:
