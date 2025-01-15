@@ -10,10 +10,10 @@ def extract_number(text):
 def preprocess_user(data):
     result = {
         "user_id_inf": data['ID'],
-        "password": str(extract_number(data['login'])),
+        "password": str(extract_number(data['Login'])),
         "prefix": data['Name_F'] + " " + data['Name_I'] + " " + data['Name_O'] if data['Name_F'].upper != 'СВОБОДНО' else 'СВОБОДНО',
         "role": "user",
-        "login": data['login'],
+        "login": data['Login'],
         "isActive": True if data['Blocked'] == '0' and data['Name_F'].upper != 'СВОБОДНО' else False,
     }
     
