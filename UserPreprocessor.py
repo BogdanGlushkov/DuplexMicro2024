@@ -1,5 +1,7 @@
 import re
 
+user_in_block = ['Vizor', 'Vizor2', 'Администратор', 'Оператор1', 'super123', 'test', 'test1', 'TestSIP', 'test2']
+
 def extract_number(text):
     match = re.search(r'\d+', text)  # \d+ находит одно или более чисел
     if match:
@@ -17,5 +19,8 @@ def preprocess_user(data):
         "isActive": True if data['Blocked'] == '0' and 'СВОБОДНО' not in (data['Name_F'] + " " + data['Name_I'] + " " + data['Name_O']) else False,
     }
     
-    # print(result)
-    return result
+    if data['Login'] not in user_in_block and 'test' not in data['Login']:
+        return result
+    else:
+        return None
+    

@@ -53,7 +53,8 @@ def fetch_users_data(url_users_acc):
 
 response = fetch_users_data(url_to_inf)
 for data in response:
-    send_data_to_server(url_users_acc, preprocess_user(data))
+    if preprocess_user(data) != None:
+        send_data_to_server(url_users_acc, preprocess_user(data))
     
 
 # Выводим все файлы, которые еще не были обработаны
