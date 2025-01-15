@@ -12,12 +12,14 @@ import requests
 # Пример использования
 directory = "/home/remote/mnt/share/"
 all_files = list_all_files(directory)
-url = "http://olegperm.fvds.ru/api/add_metrika" # Путь к endpoint на сервере
+url_metrics = "http://olegperm.fvds.ru/api/add_metrika" # Путь к endpoint на сервере
+url_users_acc = "http://olegperm.fvds.ru/api/add_account"
+url_to_inf = "http://192.168.1.210:10080/data/getdata/?ProviderName=Security.Users"
 
 def send_data_to_server(data):
     # Отправляем JSON данные через POST запрос
     headers = {"Authorization": os.environ.get('CROSS_SERVER_INTEGRATION_KEY'), "Content-Type": "application/json"}
-    response = requests.post(url, json=data, headers=headers)
+    response = requests.post(url_metrics, json=data, headers=headers)
     
     if response.status_code == 201:
         print("Данные успешно отправлены!")
@@ -29,6 +31,26 @@ def send_data_to_server(data):
         remove_file_from_query(file)
     else:
         print(f"Ошибка при отправке данных: {response.status_code} {response.json}")
+
+def fetch_users_data(url_users_acc):
+    try:
+        # Выполняем GET-запрос
+        response = requests.get(url_users_acc)
+        response.raise_for_status()  # Генерирует исключение, если код состояния не 200
+        data = response.json()  # Преобразуем ответ в JSON (словарь или список)
+        # Извлекаем данные из ключа "Data"
+        if "Data" in data["result"]:
+            return data["result"]["Data"]
+        else:
+            print("Ключ 'Data' не найден в ответе.")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Произошла ошибка при выполнении запроса: {e}")
+        return None
+
+
+response = fetch_users_data(url_to_inf)
+print(response)
 
 # Выводим все файлы, которые еще не были обработаны
 if all_files:
