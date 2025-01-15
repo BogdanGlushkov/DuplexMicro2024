@@ -17,19 +17,20 @@ url_metrics = "http://olegperm.fvds.ru/api/add_metrika" # Путь к endpoint �
 url_users_acc = "http://olegperm.fvds.ru/api/add_account"
 url_to_inf = "http://192.168.1.210:10080/data/getdata/?ProviderName=Security.Users"
 
-def send_data_to_server(data):
+def send_data_to_server(url, data):
     # Отправляем JSON данные через POST запрос
     headers = {"Authorization": os.environ.get('CROSS_SERVER_INTEGRATION_KEY'), "Content-Type": "application/json"}
-    response = requests.post(url_metrics, json=data, headers=headers)
+    response = requests.post(url, json=data, headers=headers)
     
     if response.status_code == 201:
         print("Данные успешно отправлены!")
-        data = json.loads(data)
-        for part_json in data.get("metriks", []):
-            Date = part_json.get("Date")
-            Operator = part_json.get("Operator")
-            add_entry(Operator, Date)
-        remove_file_from_query(file)
+        if url == url_metrics:
+            data = json.loads(data)
+            for part_json in data.get("metriks", []):
+                Date = part_json.get("Date")
+                Operator = part_json.get("Operator")
+                add_entry(Operator, Date)
+            remove_file_from_query(file)
     else:
         print(f"Ошибка при отправке данных: {response.status_code} {response.json}")
 
@@ -52,7 +53,8 @@ def fetch_users_data(url_users_acc):
 
 response = fetch_users_data(url_to_inf)
 for data in response:
-    preprocess_user(data)
+    send_data_to_server(url_users_acc, preprocess_user(data))
+    
 
 # Выводим все файлы, которые еще не были обработаны
 if all_files:
@@ -61,6 +63,6 @@ if all_files:
     
     for file in all_files:
         if file.endswith('.xls'):
-            send_data_to_server(send_response(file))
+            send_data_to_server(url_metrics, send_response(file))
 else:
     print("Все файлы уже были обработаны.")

@@ -17,5 +17,5 @@ def preprocess_user(data):
         "isActive": True if data['Blocked'] == '0' and 'СВОБОДНО' not in (data['Name_F'] + " " + data['Name_I'] + " " + data['Name_O']) else False,
     }
     
-    print(result)
+    # print(result)
     return result
