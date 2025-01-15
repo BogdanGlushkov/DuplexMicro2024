@@ -23,7 +23,7 @@ def send_data_to_server(url, data):
     response = requests.post(url, json=data, headers=headers)
     
     if response.status_code == 201:
-        # print("Данные успешно отправлены!")
+        print("Данные успешно отправлены!")
         if url == url_metrics:
             data = json.loads(data)
             for part_json in data.get("metriks", []):
