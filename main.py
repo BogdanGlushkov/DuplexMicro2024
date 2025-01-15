@@ -50,7 +50,7 @@ def fetch_users_data(url_users_acc):
 
 
 response = fetch_users_data(url_to_inf)
-print(response)
+print(response[0])
 
 # Выводим все файлы, которые еще не были обработаны
 if all_files:
