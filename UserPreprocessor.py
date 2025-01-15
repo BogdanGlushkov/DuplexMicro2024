@@ -11,7 +11,7 @@ def preprocess_user(data):
     result = {
         "user_id_inf": data['ID'],
         "password": str(extract_number(data['Login'])),
-        "prefix": data['Name_F'] + " " + data['Name_I'] + " " + data['Name_O'] if 'СВОБОДНО' not in (data['Name_F'] + " " + data['Name_I'] + " " + data['Name_O']).upper else 'СВОБОДНО',
+        "prefix": data['Name_F'] + " " + data['Name_I'] + " " + data['Name_O'] if 'СВОБОДНО' not in (data['Name_F'] + " " + data['Name_I'] + " " + data['Name_O']) else 'СВОБОДНО',
         "role": "user",
         "login": data['Login'],
         "isActive": True if data['Blocked'] == '0' and data['Name_F'].upper != 'СВОБОДНО' else False,
