@@ -74,7 +74,7 @@ def keep_alive():
         
 def main():
     schedule.every(1).minutes.do(keep_alive)
-    schedule.every().hour.at(":35").do(file_handling)
+    schedule.every().hour.at(":36").do(file_handling)
     
     while True:
         schedule.run_pending()
