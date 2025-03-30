@@ -1,0 +1,5 @@
+services:
+  micro_duplex:
+    build: .
+    restart: unless-stopped
+    command: python main.py
