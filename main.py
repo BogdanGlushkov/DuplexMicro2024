@@ -73,8 +73,8 @@ def keep_alive():
     print("Alive.")
         
 def main():
-    schedule.every(1).minutes.do(keep_alive)
-    schedule.every().hour.at(":36").do(file_handling)
+    # schedule.every(1).minutes.do(keep_alive)
+    schedule.every().hours.do(file_handling)
     
     while True:
         schedule.run_pending()
