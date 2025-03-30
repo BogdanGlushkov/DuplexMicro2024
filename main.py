@@ -1,3 +1,4 @@
+import schedule
 from file_script import list_all_files, remove_file_from_query
 from DataPreprocessor import send_response
 from UserPreprocessor import preprocess_user
@@ -10,15 +11,13 @@ load_dotenv()
 
 import requests
 
-# Пример использования
 directory = "/mnt/share/"
 all_files = list_all_files(directory)
-url_metrics = "http://olegperm.fvds.ru/api/add_metrika" # Путь к endpoint на сервере
+url_metrics = "http://olegperm.fvds.ru/api/add_metrika"
 url_users_acc = "http://olegperm.fvds.ru/api/add_account"
 url_to_inf = "http://192.168.1.210:10080/data/getdata/?ProviderName=Security.Users"
 
 def send_data_to_server(url, data):
-    # Отправляем JSON данные через POST запрос
     headers = {"Authorization": os.environ.get('CROSS_SERVER_INTEGRATION_KEY'), "Content-Type": "application/json"}
     response = requests.post(url, json=data, headers=headers)
     
@@ -30,17 +29,18 @@ def send_data_to_server(url, data):
                 Date = part_json.get("Date")
                 Operator = part_json.get("Operator")
                 add_entry(Operator, Date)
-            remove_file_from_query(file)
+            
+            return(response.status_code)
     else:
         print(f"Ошибка при отправке данных: {response.status_code} {response.json}")
+        return(response.status_code)
 
 def fetch_users_data(url_users_acc):
     try:
-        # Выполняем GET-запрос
         response = requests.get(url_users_acc)
-        response.raise_for_status()  # Генерирует исключение, если код состояния не 200
-        data = response.json()  # Преобразуем ответ в JSON (словарь или список)
-        # Извлекаем данные из ключа "Data"
+        response.raise_for_status()
+        data = response.json()
+
         if "Data" in data["result"]:
             return data["result"]["Data"]
         else:
@@ -50,19 +50,30 @@ def fetch_users_data(url_users_acc):
         print(f"Произошла ошибка при выполнении запроса: {e}")
         return None
 
+def file_handling():
+    response = fetch_users_data(url_to_inf)
+    for data in response:
+        if preprocess_user(data) != None:
+            send_data_to_server(url_users_acc, preprocess_user(data))
 
-response = fetch_users_data(url_to_inf)
-for data in response:
-    if preprocess_user(data) != None:
-        send_data_to_server(url_users_acc, preprocess_user(data))
 
-# Выводим все файлы, которые еще не были обработаны
-if all_files:
-    print("Список всех файлов, которые еще не были обработаны:")
-    print(all_files)
+    if all_files:
+        print("Список всех файлов, которые еще не были обработаны:")
+        print(all_files)
+        
+        for file in all_files:
+            if file.endswith('.xls'):
+                status = send_data_to_server(url_metrics, send_response(file))
+                
+                remove_file_from_query(file) if status == 201 else print("Непридвиденное состояние, данные не были отправлены:", status)
+    else:
+        print("Все файлы уже были обработаны.")
+        
+def main():
+    schedule.every(1).hour.do(file_handling)
     
-    for file in all_files:
-        if file.endswith('.xls'):
-            send_data_to_server(url_metrics, send_response(file))
-else:
-    print("Все файлы уже были обработаны.")
+    while True:
+        schedule.run_pending()
+        
+if __name__ == '__main__':
+    main()
