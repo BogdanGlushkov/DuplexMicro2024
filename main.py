@@ -70,7 +70,7 @@ def file_handling():
         print("Все файлы уже были обработаны.")
         
 def main():
-    schedule.every(1).hour.do(file_handling)
+    schedule.every(10).minutes.do(file_handling)
     
     while True:
         schedule.run_pending()
