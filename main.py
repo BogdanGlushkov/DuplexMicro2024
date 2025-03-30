@@ -73,7 +73,6 @@ def keep_alive():
     print("Alive.")
         
 def main():
-    schedule.every(10).seconds.do(keep_alive)
     schedule.every(10).minutes.do(file_handling)
     
     while True:
